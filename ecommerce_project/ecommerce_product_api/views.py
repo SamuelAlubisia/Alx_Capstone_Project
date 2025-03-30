@@ -8,16 +8,14 @@ from django_filters.rest_framework import DjangoFilterBackend # type: ignore
 
 
 # Create your views here.
-User = get_user_model()
-
 class UserListCreateView(generics.ListCreateAPIView):
     queryset = User.objects.all()
-    serialzier_class = UserSerializer
+    serializer_class = UserSerializer
     permissions_classes = [permissions.AllowAny] # Anyone can register
 
 class UserDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = User.objects.all()
-    serialzier_class = UserSerializer
+    serializer_class = UserSerializer
     permissions_classes = [permissions.IsAuthenticated] # Only authenticated users
     
 class ProductListCreateView(generics.ListCreateAPIView):
@@ -46,9 +44,9 @@ class ProductDetailView(generics.RetrieveUpdateDestroyAPIView):
 class CategoryListCreateView(generics.ListCreateAPIView):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
-    permissions_classes = [permissions.IsAdmin] # Only Admins can create new categories
+    permissions_classes = [permissions.IsAdminUser] # Only Admins can create new categories
 
 class CategoryDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
-    permissions_classes = [permissions.IsAdmin] #Only Admins can modify
+    permissions_classes = [permissions.IsAdminUser] #Only Admins can modify
