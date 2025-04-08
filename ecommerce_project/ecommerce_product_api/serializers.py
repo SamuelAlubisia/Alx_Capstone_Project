@@ -2,6 +2,7 @@ from rest_framework import serializers # type: ignore
 from .models import User, Product, Category
 from django.contrib.auth import get_user_model
 from django.contrib.auth import authenticate
+from rest_framework.response import Response # type: ignore
 
 User = get_user_model() 
 
@@ -64,5 +65,16 @@ class LoginSerializer(serializers.Serializer):
     def validate(self, data):
         user = authenticate(**data)
         if user and user.is_active:
-            return user
+            return user  # Return user if valid
+        
+        # Raise a validation error if authentication fails
         raise serializers.ValidationError("Invalid credentials")
+
+    def create(self, validated_data):
+        user = self.validate(validated_data)  # Validate user credentials
+
+        return Response({
+            'message': 'User logged in successfully',
+            'user': user.username,
+            'email': user.email,
+        }, status=200)

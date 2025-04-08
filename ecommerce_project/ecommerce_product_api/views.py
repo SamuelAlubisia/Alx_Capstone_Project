@@ -13,17 +13,17 @@ from django.contrib.auth import logout
 class UserListCreateView(generics.ListCreateAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permissions_classes = [permissions.AllowAny] # Anyone can register
+    permission_classes = [permissions.AllowAny] # Anyone can register
 
 class UserDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permissions_classes = [permissions.IsAuthenticated] # Only authenticated users
+    permission_classes = [permissions.IsAuthenticated] # Only authenticated users
     
 class ProductListCreateView(generics.ListCreateAPIView):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
-    permissions_classes = [permissions.IsAuthenticatedOrReadOnly] # Auth users can create, others can view
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly] # Auth users can create, others can view
     filter_backends = [filters.SearchFilter, DjangoFilterBackend]
 
     # Search by name and category (partial match)
@@ -40,7 +40,7 @@ class ProductListCreateView(generics.ListCreateAPIView):
 class ProductDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
-    permissions_classes = [permissions.IsAuthenticated] # Only authenticated users can modify
+    permission_classes = [permissions.IsAuthenticated] # Only authenticated users can modify
     lookup_field = 'id'  # Retrieve product by ID
 
     def get_object(self):
@@ -62,24 +62,25 @@ class ProductDetailView(generics.RetrieveUpdateDestroyAPIView):
 class CategoryListCreateView(generics.ListCreateAPIView):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
-    permissions_classes = [permissions.IsAdminUser] # Only Admins can create new categories
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]  # Auth users can create, others can view
 
     def create(self, request, *args, **kwargs):
-        """ Only admins can create categories """
-        if not request.user.is_staff:
-            return Response({"error": "Only admins can create categories."}, status=status.HTTP_403_FORBIDDEN)
+        """ Only authenticated users can create categories """
+        if not request.user.is_authenticated:
+            return Response({"error": "Authentication is required to create categories."}, status=status.HTTP_401_UNAUTHORIZED)
+        
         return super().create(request, *args, **kwargs)
 
 class CategoryDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
-    permissions_classes = [permissions.IsAdminUser] #Only Admins can modify
+    permission_classes = [permissions.IsAuthenticated] # Only authenticated users can modify
 
     def get_object(self):
         """ Handle 404 if product is not found """
         try:
             return super().get_object()
-        except Product.DoesNotExist:
+        except Category.DoesNotExist:
             raise NotFound({"error": "Product not found."})
         
 class RegisterView(APIView):
@@ -97,13 +98,20 @@ class LoginView(APIView):
         if serializer.is_valid():
             user = serializer.validated_data
             token, _ = Token.objects.get_or_create(user=user)
-            return Response({'token': token.key}, status=status.HTTP_200_OK)
+            return Response(
+                {
+                    'message': 'Successfully logged in.',
+                    'token': token.key
+                },
+                status=status.HTTP_200_OK
+            )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
+    
 class LogoutView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
-        request.user.auth_token.delete()
-        logout(request)
-        return Response(status=status.HTTP_200_OK)
+        # Deleting the token (logging out the user)
+        request.user.auth_token.delete()  # This removes the token from the database
+        logout(request)  # This logs out the user by clearing the session
+        return Response({"detail": "Successfully logged out."}, status=status.HTTP_200_OK)

@@ -8,7 +8,6 @@ urlpatterns = [
     path('categories/<int:pk>/', CategoryDetailView.as_view(), name='category-detail'),
     path('products/', ProductListCreateView.as_view(), name= 'product-list-create'),
     path('products/<int:id>/', ProductDetailView.as_view(), name='product-detail'),
-    # Authentication routes
     path('auth/register/', RegisterView.as_view(), name='register'),
     path('auth/login/', LoginView.as_view(), name='login'),
     path('auth/logout/', LogoutView.as_view(), name='logout'),
